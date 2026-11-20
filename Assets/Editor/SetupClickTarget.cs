@@ -25,7 +25,6 @@ public static class SetupClickTarget
         PrefabUtility.InstantiatePrefab(prefab);
         EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath);
         AssetDatabase.SaveAssets();
-        Debug.Log("CLICK_TARGET_SETUP_OK: Scene saved with Target prefab and ClickTargetGame component.");
     }
 
     [MenuItem("Tools/Play Click Target")]

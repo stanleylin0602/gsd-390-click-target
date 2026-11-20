@@ -1,83 +1,63 @@
 using UnityEngine;
 
-// This component lives on the Target prefab. It handles input, time, and drawing.
 public class ClickTargetGame : MonoBehaviour
 {
-    public int clicksToWin = 10;
-    public float timeLimit = 15f;
+    int clicks = 0;
+    float timeLeft = 15f;
+    Rect target;
 
-    private int clicks;
-    private float timeLeft;
-    private bool started;
-    private bool finished;
-
-    private Rect TargetRect => new Rect(Screen.width / 2f - 80, Screen.height / 2f - 50, 160, 160);
-
-    private void Start()
+    void Update()
     {
-        ResetGame();
+        target = new Rect(Screen.width / 2f - 80, Screen.height / 2f - 50, 160, 160);
+        if (Input.GetKeyDown(KeyCode.R)) Restart();
+        if (clicks >= 10 || timeLeft <= 0) return;
+
+        // The first click starts the timer.
+        if (clicks > 0) timeLeft = Mathf.Max(0, timeLeft - Time.deltaTime);
+        if (timeLeft <= 0) return;
+
+        // Mouse coordinates start at the bottom; GUI coordinates start at the top.
+        Vector2 mouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+        if (Input.GetMouseButtonDown(0) && target.Contains(mouse)) clicks++;
     }
 
-    private void ResetGame()
+    void Restart()
     {
         clicks = 0;
-        timeLeft = timeLimit;
-        started = false;
-        finished = false;
+        timeLeft = 15f;
     }
 
-    private void Update()
+    void OnGUI()
     {
-        if (Input.GetKeyDown(KeyCode.R)) ResetGame();
-        if (finished) return;
+        GUIStyle text = new GUIStyle(GUI.skin.label);
+        text.fontSize = 24;
+        text.alignment = TextAnchor.MiddleCenter;
 
-        // Start timing with the first click, so the player has time to read.
-        if (started)
-        {
-            timeLeft = Mathf.Max(0, timeLeft - Time.deltaTime);
-            if (timeLeft <= 0)
-            {
-                finished = true;
-                return;
-            }
-        }
-
-        // Input uses bottom-left coordinates; the on-screen GUI uses top-left.
-        Vector2 mouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
-        if (Input.GetMouseButtonDown(0) && TargetRect.Contains(mouse))
-        {
-            started = true;
-            clicks++;
-            if (clicks >= clicksToWin) finished = true;
-        }
-    }
-
-    private void OnGUI()
-    {
-        GUIStyle title = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 32, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold
-        };
-        GUIStyle text = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 20, alignment = TextAnchor.MiddleCenter
-        };
-        GUI.Label(new Rect(0, 25, Screen.width, 50), "CLICK THE TARGET", title);
-        GUI.Label(new Rect(0, 80, Screen.width, 35),
-            "Click the square " + clicksToWin + " times before time runs out.", text);
+        GUI.Label(new Rect(0, 25, Screen.width, 50), "CLICK THE TARGET", text);
+        GUI.Label(new Rect(0, 80, Screen.width, 35), "Click the square 10 times in 15 seconds.", text);
         GUI.Label(new Rect(0, 120, Screen.width, 35),
-            "Clicks: " + clicks + " / " + clicksToWin + "     Time: " + timeLeft.ToString("0.0") + "s", text);
+            "Clicks: " + clicks + " / 10     Time: " + timeLeft.ToString("0.0") + "s", text);
 
-        GUI.color = finished ? (clicks >= clicksToWin ? Color.green : Color.gray) : new Color(0.25f, 0.8f, 1f);
-        GUI.DrawTexture(TargetRect, Texture2D.whiteTexture);
+        string message = "Your first click starts the timer.";
+        GUI.color = new Color(0.25f, 0.8f, 1f);
+        if (clicks >= 10)
+        {
+            message = "You Win!";
+            GUI.color = Color.green;
+        }
+        else if (timeLeft <= 0)
+        {
+            message = "You Lose!";
+            GUI.color = Color.gray;
+        }
+        else if (clicks > 0) message = "Keep clicking!";
+
+        GUI.DrawTexture(target, Texture2D.whiteTexture);
         GUI.color = Color.black;
-        GUI.Label(TargetRect, finished ? "DONE" : "CLICK ME", title);
+        GUI.Label(target, "CLICK ME", text);
         GUI.color = Color.white;
-
-        string message = finished ? (clicks >= clicksToWin ? "You Win!" : "You Lose!")
-            : started ? "Keep clicking!" : "Your first click starts the timer.";
-        GUI.Label(new Rect(0, TargetRect.yMax + 20, Screen.width, 45), message, title);
-        if (GUI.Button(new Rect(Screen.width / 2f - 90, TargetRect.yMax + 80, 180, 40), "Restart (R)"))
-            ResetGame();
+        GUI.Label(new Rect(0, target.yMax + 20, Screen.width, 45), message, text);
+        if (GUI.Button(new Rect(Screen.width / 2f - 90, target.yMax + 80, 180, 40), "Restart (R)"))
+            Restart();
     }
 }
